@@ -11,6 +11,12 @@ Aplikacja umożliwiająca prowadzenie cyfrowej historii serwisowej pojazdu, obej
 ## Technologia
 Kotlin + Jetpack Compose
 
+## Aktualny stan aplikacji
+
+Działają: garaż i dodawanie aut, ekran pojazdu, usuwanie z dwoma potwierdzeniami, historia serwisowa z kosztami oraz przypomnienia według daty i przebiegu. Przebieg można aktualizować z ekranu samochodu. Dane są zapisywane lokalnie.
+
+Przypomnienia pokazują status w aplikacji i pozwalają oznaczyć zadanie jako wykonane lub je przywrócić. Powiadomienia systemowe, edycja wpisów, pozaserwisowe koszty eksploatacji i OBD-II pozostają do wdrożenia. Poniższa tabela opisuje zakres docelowy projektu; częściowo zrealizowane funkcje nadal wymagają rozwoju.
+
 ## Funkcjonalności
 
 | Priorytet | Funkcjonalność | Status |
