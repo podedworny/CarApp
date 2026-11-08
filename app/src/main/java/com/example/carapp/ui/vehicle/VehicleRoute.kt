@@ -37,13 +37,21 @@ fun VehicleRoute(car: Car, repository: ServiceRepository, carRepository: CarRepo
         while (isActive) { value = ServiceDates.todayMillis(); delay(60000) }
     }
     LaunchedEffect(mileage.updatedCar) { mileage.updatedCar?.let(onCarUpdated) }
+    LaunchedEffect(service.suggestedMileage, currentCar.mileage) {
+        service.suggestedMileage?.let { if (it <= currentCar.mileage) serviceModel.dismissMileageSuggestion() }
+    }
+    service.suggestedMileage?.takeIf { it > currentCar.mileage }?.let { suggested ->
+        ServiceMileageSuggestionDialog(suggested, mileage.saving, mileage.error,
+            onConfirm = { mileageModel.acceptSuggestion(suggested) },
+            onSkip = serviceModel::dismissMileageSuggestion)
+    }
     BackHandler(service.form.visible) { serviceModel.closeForm() }
     BackHandler(reminders.form.visible) { reminderModel.closeForm() }
     if (mileage.visible) MileageDialog(mileage, mileageModel::change, mileageModel::save, mileageModel::close)
     if (service.form.visible) {
         ServiceFormScreen(currentCar, service.form, onBack = serviceModel::closeForm,
             onField = serviceModel::changeField, onType = serviceModel::changeType,
-            onDate = serviceModel::changeDate, onSave = serviceModel::save, modifier = modifier)
+            onDate = serviceModel::changeDate, onSave = { serviceModel.save(currentCar.mileage) }, modifier = modifier)
     } else if (reminders.form.visible) {
         ReminderFormScreen(currentCar, reminders.form, onBack = reminderModel::closeForm,
             onTitle = reminderModel::title, onDate = reminderModel::date, onMileage = reminderModel::mileage,

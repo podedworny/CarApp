@@ -39,3 +39,15 @@ Ostrzeżenia Lint dotyczą dostępnych aktualizacji zależności, nieużywanych 
 Testy UI uruchomiono na jednym emulatorze. Nie potwierdzają zgodności na wszystkich wspieranych wersjach Androida, wszystkich rozmiarach ekranu ani pełnego odtworzenia procesu przez system. Testy SavedStateHandle sprawdzają odtwarzanie danych formularzy, ale nie zastępują testu zabicia procesu.
 
 Dane pozostają w lokalnym magazynie JSON/SharedPreferences. Nie wdrożono powiadomień systemowych, edycji wpisów i przypomnień, kosztów pozaserwisowych ani OBD-II. Przypomnienia są prezentowane wewnątrz aplikacji zgodnie z opisem UI.
+
+## Aktualizacja: przypomnienia i aktualność licznika
+
+Po wdrożeniu propozycji aktualizacji licznika po serwisie weryfikacja obejmuje 45 testów jednostkowych i 13 testów w emulatorze — wszystkie przeszły. Android Lint nadal zgłasza 0 błędów.
+
+Dodane sprawdzenia: propozycja tylko po udanym zapisie większego przebiegu, brak propozycji dla niższego odczytu, porównanie z bieżącym stanem auta, odtworzenie oczekującej propozycji, błąd aktualizacji i ponowienie, granica 30 dni, odczyt starszego formatu danych bez daty, zapis daty przy potwierdzeniu licznika. Test UI potwierdza zarówno pominięcie propozycji, jak i zaakceptowanie jej oraz zachowanie obu wpisów serwisowych.
+
+## Aktualizacja: odświeżenie UI
+
+Przeszło 45 testów jednostkowych i 17 testów w emulatorze, w tym dotychczasowe przepływy serwisu, przypomnień i licznika po zmianie nawigacji. Lint nie zgłosił błędów blokujących.
+
+Obejrzano zrzuty nowego garażu, ekranu pojazdu w jasnym i ciemnym motywie oraz wariantu o szerokości 320 dp z czcionką 130%. Kontrola wizualna wykryła nadmierne zawijanie marki i etykiety nawigacji — poprawiono rozmiar ilustracji, akcję licznika i etykietę „Terminy”. Testy układu sprawdzają otwarcie auta z karty, dostępność menu i wszystkich sekcji oraz akcję aktualizacji przebiegu. Zrzuty są generowane jako artefakty testowe; nie są częścią zasobów aplikacji.

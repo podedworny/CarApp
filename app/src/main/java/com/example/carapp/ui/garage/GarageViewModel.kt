@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
+import com.example.carapp.domain.validation.ServiceDates
 import com.example.carapp.domain.model.Car
 import com.example.carapp.domain.repository.CarRepository
 import com.example.carapp.ui.addcar.AddCarState
@@ -121,7 +122,7 @@ class GarageViewModel(
         val draftId = savedState.get<String>("draftCarId") ?: UUID.randomUUID().toString().also { savedState["draftCarId"] = it }
         val car = Car(id = draftId, brand = input.brand.trim(), model = input.model.trim(),
             year = input.year.toInt(), mileage = input.mileage.toInt(),
-            registration = input.registration.trim())
+            registration = input.registration.trim(), mileageUpdatedDateMillis = ServiceDates.todayMillis())
         _form.value = _form.value.copy(saving = true)
         viewModelScope.launch {
             try {

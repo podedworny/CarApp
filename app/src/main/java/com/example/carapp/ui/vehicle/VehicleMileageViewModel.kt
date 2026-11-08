@@ -41,6 +41,16 @@ class VehicleMileageViewModel(private val car: Car, private val repository: CarR
             _state.value = input.copy(error = "Podaj przebieg nie mniejszy niż $minimum km.")
             return
         }
+        persist(mileage, input)
+    }
+
+    fun acceptSuggestion(mileage: Int) {
+        val input = _state.value
+        if (input.saving || mileage < (input.updatedCar?.mileage ?: car.mileage)) return
+        persist(mileage, input.copy(value = mileage.toString(), visible = false))
+    }
+
+    private fun persist(mileage: Int, input: MileageState) {
         _state.value = input.copy(saving = true, error = null)
         viewModelScope.launch {
             try {

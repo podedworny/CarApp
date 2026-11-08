@@ -38,22 +38,21 @@ class ServiceFlowInstrumentedTest {
         val reminders = LocalReminderRepository(storage)
         runBlocking { cars.addCar(car) }
         compose.setContent { CarAppTheme { VehicleRoute(car, services, cars, reminders, onBack = {}, onDelete = {}) } }
-        compose.onNodeWithText("Przypomnienia").performScrollTo().performClick()
+        compose.onNodeWithText("Terminy").performClick()
         compose.waitUntil(5000) {
             compose.onAllNodes(hasText("+ Dodaj przypomnienie") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
         }
         compose.onNodeWithText("+ Dodaj przypomnienie").performClick()
         compose.onNodeWithText("Czego dotyczy? *").performTextInput("Olej testowy")
-        scrollTo("Według daty")
+        scrollTo("Termin według daty (zalecany)")
         compose.onNodeWithContentDescription("Według daty").performClick()
-        scrollTo("Według przebiegu")
+        scrollTo("Próg przebiegu (opcjonalnie)")
         compose.onNodeWithContentDescription("Według przebiegu").performClick()
         scrollTo("Przebieg docelowy *").performTextReplacement("86000")
         scrollTo("Zapisz przypomnienie").performClick()
         compose.waitUntil(5000) { compose.onAllNodesWithText("Serwis").fetchSemanticsNodes().isNotEmpty() }
         scrollTo("Olej testowy").assertIsDisplayed()
         compose.onNodeWithText("Nadchodzące").assertIsDisplayed()
-        compose.onNode(hasScrollToNodeAction()).performScrollToNode(hasContentDescription("Akcje pojazdu"))
         compose.onNodeWithContentDescription("Akcje pojazdu").performClick()
         compose.onNodeWithText("Aktualizuj przebieg").performClick()
         compose.onNodeWithText("Przebieg *").performTextReplacement("86000")
@@ -70,7 +69,7 @@ class ServiceFlowInstrumentedTest {
         val reminders = LocalReminderRepository(storage)
         runBlocking { cars.addCar(car) }
         compose.setContent { CarAppTheme { VehicleRoute(car, services, cars, reminders, onBack = {}, onDelete = {}) } }
-        compose.onNodeWithText("Przypomnienia").performScrollTo().performClick()
+        compose.onNodeWithText("Terminy").performClick()
         compose.waitUntil(5000) {
             compose.onAllNodes(hasText("+ Dodaj przypomnienie") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
         }
@@ -90,6 +89,40 @@ class ServiceFlowInstrumentedTest {
         assertEquals("Badanie testowe", saved.title)
     }
 
+    @Test fun serviceMileageSuggestionCanBeSkippedOrAcceptedWithoutLosingEntry() {
+        val cars = LocalCarRepository(storage)
+        runBlocking { cars.addCar(car) }
+        compose.setContent { CarAppTheme { VehicleRoute(car, services, cars, LocalReminderRepository(storage), onBack = {}, onDelete = {}) } }
+        compose.onNodeWithText("Serwis").performClick()
+        compose.waitUntil(5000) {
+            compose.onAllNodes(hasText("+ Dodaj wpis serwisowy") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
+        }
+        fun addEntry(title: String) {
+            scrollTo("+ Dodaj wpis serwisowy").performClick()
+            compose.onNodeWithText("Co zostało zrobione? *").performTextInput(title)
+            androidx.test.espresso.Espresso.closeSoftKeyboard()
+            scrollTo("Przebieg *").performTextReplacement("90000")
+            androidx.test.espresso.Espresso.closeSoftKeyboard()
+            scrollTo("Zapisz wpis").performClick()
+            compose.waitUntil(5000) {
+                compose.onAllNodesWithText("Zaktualizować przebieg auta?").fetchSemanticsNodes().isNotEmpty()
+            }
+        }
+        addEntry("Pierwszy serwis")
+        compose.onNodeWithText("Nie teraz").performClick()
+        assertEquals(85000, runBlocking { cars.getCars().single().mileage })
+        assertEquals(1, runBlocking { services.getEntries(car.id).size })
+        addEntry("Drugi serwis")
+        compose.onNodeWithText("Aktualizuj licznik").performClick()
+        compose.waitUntil(5000) {
+            compose.onAllNodesWithText("Zaktualizować przebieg auta?").fetchSemanticsNodes().isEmpty()
+        }
+        val updated = runBlocking { cars.getCars().single() }
+        assertEquals(90000, updated.mileage)
+        assertNotNull(updated.mileageUpdatedDateMillis)
+        assertEquals(2, runBlocking { services.getEntries(car.id).size })
+    }
+
     @Test fun addServiceAndSeeItInHistoryAndCostSummary() {
         runBlocking { LocalCarRepository(storage).addCar(car) }
         compose.setContent { CarAppTheme { VehicleRoute(car, services, LocalCarRepository(storage), LocalReminderRepository(storage), onBack = {}, onDelete = {}) } }
@@ -106,7 +139,7 @@ class ServiceFlowInstrumentedTest {
         scrollTo("Zapisz wpis").performClick()
         compose.waitUntil(5000) { compose.onAllNodesWithText("Serwis").fetchSemanticsNodes().isNotEmpty() }
         scrollTo("Serwis testowy").assertIsDisplayed()
-        scrollTo("Koszty").performClick()
+        compose.onNodeWithText("Koszty").performClick()
         scrollTo("Łączne koszty serwisu").assertIsDisplayed()
         compose.onAllNodesWithText(formatCost(45035)).onFirst().assertIsDisplayed()
         val persisted = runBlocking { services.getEntries(car.id).single() }

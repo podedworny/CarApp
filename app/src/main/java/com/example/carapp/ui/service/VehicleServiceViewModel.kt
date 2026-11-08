@@ -26,7 +26,7 @@ class VehicleServiceViewModel(
     private val savedState: SavedStateHandle,
     private val today: () -> Long = ServiceDates::todayMillis
 ) : ViewModel() {
-    private val _state = MutableStateFlow(VehicleServiceState(form = ServiceFormState(
+    private val _state = MutableStateFlow(VehicleServiceState(suggestedMileage = savedState["suggestedMileage"], form = ServiceFormState(
         visible = savedState["visible"] ?: false,
         type = ServiceType.valueOf(savedState["type"] ?: ServiceType.MAINTENANCE.name),
         title = savedState["title"] ?: "",
@@ -90,7 +90,7 @@ class VehicleServiceViewModel(
         if (!_state.value.form.saving) updateForm(_state.value.form.copy(dateMillis = dateMillis, saveError = null))
     }
 
-    fun save() {
+    fun save(currentMileage: Int = car.mileage) {
         val input = _state.value.form
         if (!input.visible || input.saving || _state.value.loading || _state.value.loadError) return
         updateForm(input.copy(submitted = true, saveError = null))
@@ -106,7 +106,9 @@ class VehicleServiceViewModel(
                 repository.addEntry(entry)
                 val entries = (_state.value.entries.filterNot { it.id == entry.id } + entry)
                     .sortedWith(compareByDescending<ServiceEntry> { it.dateMillis }.thenByDescending { it.mileage })
-                _state.value = _state.value.copy(entries = entries)
+                val suggestion = entry.mileage.takeIf { it > currentMileage }
+                savedState["suggestedMileage"] = suggestion
+                _state.value = _state.value.copy(entries = entries, suggestedMileage = suggestion)
                 savedState.remove<String>("entryId")
                 updateForm(ServiceFormState())
             } catch (cancelled: CancellationException) { throw cancelled }
@@ -115,6 +117,11 @@ class VehicleServiceViewModel(
                     saveError = "Nie udało się zapisać wpisu. Dane pozostają w formularzu — spróbuj ponownie."))
             }
         }
+    }
+
+    fun dismissMileageSuggestion() {
+        savedState.remove<Int>("suggestedMileage")
+        _state.value = _state.value.copy(suggestedMileage = null)
     }
 
     private fun updateForm(form: ServiceFormState) {

@@ -48,6 +48,22 @@ class VehicleMileageViewModelTest {
         vm.save(); advanceUntilIdle()
         assertEquals(90000, repo.car.mileage)
     }
+    @Test fun `accepting suggestion updates car once and failed update can be retried`() = runTest(dispatcher) {
+        val repo = Repo(car).apply { fail = true }
+        val vm = VehicleMileageViewModel(car, repo, SavedStateHandle())
+        vm.acceptSuggestion(95000)
+        vm.acceptSuggestion(95000)
+        advanceUntilIdle()
+        assertNull(vm.state.value.updatedCar)
+        assertNotNull(vm.state.value.error)
+        assertFalse(vm.state.value.visible)
+        assertEquals(85000, repo.car.mileage)
+        repo.fail = false
+        vm.acceptSuggestion(95000)
+        advanceUntilIdle()
+        assertEquals(95000, vm.state.value.updatedCar?.mileage)
+    }
+
     private class Repo(var car: Car) : CarRepository {
         var calls = 0
         var fail = false

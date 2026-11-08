@@ -1,11 +1,12 @@
 package com.example.carapp.data
 
+import com.example.carapp.domain.validation.ServiceDates
 import com.example.carapp.domain.model.Car
 import com.example.carapp.domain.repository.CarRepository
 import org.json.JSONArray
 import org.json.JSONObject
 
-class LocalCarRepository(private val storage: LocalGarageStorage) : CarRepository {
+class LocalCarRepository(private val storage: LocalGarageStorage, private val today: () -> Long = ServiceDates::todayMillis) : CarRepository {
     override suspend fun getCars(): List<Car> = storage.access { preferences ->
         decodeCars(preferences.getString("cars", "[]"))
     }
@@ -19,7 +20,7 @@ class LocalCarRepository(private val storage: LocalGarageStorage) : CarRepositor
         val cars = decodeCars(preferences.getString("cars", "[]"))
         val car = cars.firstOrNull { it.id == id } ?: error("Vehicle no longer exists")
         require(mileage >= car.mileage) { "Mileage cannot decrease" }
-        val updated = car.copy(mileage = mileage)
+        val updated = car.copy(mileage = mileage, mileageUpdatedDateMillis = today())
         check(preferences.edit().putString("cars", encodeCars(cars.map { if (it.id == id) updated else it })).commit())
         updated
     }
@@ -36,14 +37,16 @@ class LocalCarRepository(private val storage: LocalGarageStorage) : CarRepositor
         return List(array.length()) { index ->
             val item = array.getJSONObject(index)
             Car(item.getString("id"), item.getString("brand"), item.getString("model"),
-                item.getInt("year"), item.getInt("mileage"), item.getString("registration"))
+                item.getInt("year"), item.getInt("mileage"), item.getString("registration"),
+                if (item.isNull("mileageUpdatedDateMillis")) null else item.getLong("mileageUpdatedDateMillis"))
         }
     }
 
     private fun encodeCars(cars: List<Car>): String = JSONArray().apply {
         cars.forEach { car ->
             put(JSONObject().put("id", car.id).put("brand", car.brand).put("model", car.model)
-                .put("year", car.year).put("mileage", car.mileage).put("registration", car.registration))
+                .put("year", car.year).put("mileage", car.mileage).put("registration", car.registration)
+                .put("mileageUpdatedDateMillis", car.mileageUpdatedDateMillis ?: JSONObject.NULL))
         }
     }.toString()
 }

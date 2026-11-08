@@ -22,7 +22,8 @@ data class VehicleServiceState(
     val entries: List<ServiceEntry> = emptyList(),
     val loading: Boolean = true,
     val loadError: Boolean = false,
-    val form: ServiceFormState = ServiceFormState()
+    val form: ServiceFormState = ServiceFormState(),
+    val suggestedMileage: Int? = null
 )
 
 fun ServiceType.displayName(): String = when (this) {

@@ -1,46 +1,58 @@
 package com.example.carapp.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.carapp.domain.model.Car
 import java.text.NumberFormat
 import java.util.Locale
-
-import com.example.carapp.domain.model.Car
 
 @Composable
 fun CarCard(car: Car, onDelete: () -> Unit = {}, onOpen: () -> Unit = {}) {
     var menuOpen by rememberSaveable { mutableStateOf(false) }
-    OutlinedCard(onClick = onOpen, modifier = Modifier.fillMaxWidth()) {
-        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                Text("${car.brand} ${car.model}", modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+    Card(onClick = onOpen, modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.primaryContainer) {
+                    Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
+                        AppIcon(CarAppIcon.CAR, modifier = Modifier.size(34.dp), tint = MaterialTheme.colorScheme.primary)
+                    }
+                }
+                Spacer(Modifier.width(16.dp))
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(car.brand.uppercase(Locale.ROOT), style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary)
+                    Text(car.model, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Text(car.year.toString(), style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
                 Box {
-                    IconButton(onClick = { menuOpen = true }, modifier = Modifier.semantics {
-                        contentDescription = "Menu pojazdu ${car.brand} ${car.model}"
-                    }) { Text("⋮", style = MaterialTheme.typography.headlineSmall) }
+                    IconButton(onClick = { menuOpen = true }) {
+                        AppIcon(CarAppIcon.MORE, "Menu pojazdu ${car.brand} ${car.model}")
+                    }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(text = { Text("Otwórz pojazd") },
-                            onClick = { menuOpen = false; onOpen() })
+                        DropdownMenuItem(text = { Text("Otwórz pojazd") }, onClick = { menuOpen = false; onOpen() })
                         DropdownMenuItem(text = { Text("Usuń samochód", color = MaterialTheme.colorScheme.error) },
                             onClick = { menuOpen = false; onDelete() })
                     }
                 }
             }
-            Text("Rocznik ${car.year}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("Otwórz pojazd →", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            HorizontalDivider()
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(car.registration.ifBlank { "Brak rejestracji" })
-                Text("${NumberFormat.getIntegerInstance(Locale.forLanguageTag("pl-PL")).format(car.mileage)} km",
-                    fontWeight = FontWeight.SemiBold)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = .5f))
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                RegistrationPlate(car.registration, Modifier.weight(1f, fill = false))
+                Spacer(Modifier.width(12.dp))
+                Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                    Text("${NumberFormat.getIntegerInstance(Locale.forLanguageTag("pl-PL")).format(car.mileage)} km",
+                        style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+                    AppIcon(CarAppIcon.NEXT, modifier = Modifier.padding(start = 8.dp).size(18.dp))
+                }
             }
         }
     }

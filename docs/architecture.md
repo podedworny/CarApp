@@ -46,3 +46,19 @@ Przypomnienie ma datę, docelowy przebieg lub oba progi. Obowiązuje wcześniej 
 Datę do obliczania statusów ekran sprawdza co minutę, aby przejście przez północ zmieniało status bez ponownego uruchamiania widoku. To przypomnienia w aplikacji; nie wdrożono jeszcze planowania pracy w tle, kanałów powiadomień ani uprawnień Androida do ich wyświetlania. UI informuje o tym w formularzu i na liście.
 
 Testy obejmują progi i walidację, błędy zapisu i powtórzenia, zachowanie szkicu, oznaczanie wykonania i przywracanie zadania. Test na emulatorze tworzy przypomnienie kilometrowe, aktualizuje przebieg, sprawdza zmianę statusu i oznacza zadanie jako wykonane. Dane testów są oddzielone od właściwego garażu.
+
+## Daty przypomnień i potwierdzanie licznika
+
+Data jest domyślnym i zalecanym terminem przypomnienia. Próg kilometrowy pozostaje opcjonalny. Formularz wyjaśnia, że bez daty przypomnienie zależy od aktualności licznika.
+
+Samochód przechowuje opcjonalną datę potwierdzenia przebiegu (`mileageUpdatedDateMillis`, data kalendarzowa UTC). Nowe auto otrzymuje ją przy dodaniu. Potwierdzenie przebiegu, również bez zmiany wartości, zapisuje dzisiejszą datę. Starsze dane bez pola zachowują datę nieznaną; nie uzupełniamy jej fikcyjnie. Odczyt sprzed co najmniej 30 dni lub bez daty jest oznaczany jako potencjalnie nieaktualny. Statusów kilometrowych nie przedstawiamy wtedy bez informacji o tym ograniczeniu.
+
+Po udanym zapisie wpisu serwisowego z przebiegiem większym niż aktualny zapisany licznik pojawia się osobne pytanie o aktualizację auta. Wpis historyczny nie zmienia licznika automatycznie. Pominięcie pytania zachowuje wpis i stary przebieg. Błąd aktualizacji licznika nie usuwa wpisu serwisowego i pozwala ponowić samą aktualizację. Propozycja jest zachowana w SavedStateHandle, a porównanie używa bieżącego przebiegu przekazanego z ekranu, nie początkowego stanu ViewModelu.
+
+## Uporządkowanie interfejsu
+
+Garaż pokazuje zwarty nagłówek z akcją dodania auta oraz karty z ikoną samochodu, marką, modelem, rocznikiem, tablicą rejestracyjną i przebiegiem. Usunięto powtarzające się wstępy oraz blok opisujący przyszłe funkcje. Data potwierdzenia licznika jest dostępna w pojeździe, zamiast powtarzać ją na każdej karcie garażu.
+
+Ekran pojazdu ma stały nagłówek i dolną nawigację: Przegląd, Serwis, Koszty, Terminy. Przegląd jest wydzielony do VehicleOverview i zawiera ilustrację auta, licznik, skróty oraz koszty serwisu. Sekcje otwierają się od góry. Wspólne komponenty obejmują AppIcon i RegistrationPlate. Grafiki to lokalne wektory Androida, bez sieci ani dodatkowej biblioteki ikon.
+
+Dopasowano neutralne kolory powierzchni, typografię i odstępy w obu motywach. Przy mniejszej szerokości lub większym foncie ilustracja zajmuje mniej miejsca, a aktualizacja licznika ma przycisk z ikoną ołówka. To pozostawia miejsce na markę, model i przebieg.

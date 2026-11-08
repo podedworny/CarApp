@@ -44,11 +44,11 @@ fun ReminderFormScreen(car: Car, state: ReminderFormState, onBack: () -> Unit,
         }
         item {
             Text("Kiedy przypomnieć?", style = MaterialTheme.typography.titleMedium)
-            Text("Ustaw datę, przebieg lub oba progi. Zadanie będzie do wykonania po osiągnięciu pierwszego z nich.")
+            Text("Najlepiej ustaw datę — działa bez regularnego sprawdzania licznika. Opcjonalnie dodaj przebieg; wtedy obowiązuje wcześniejszy próg.")
             if (state.submitted && errors.target) Text("Włącz co najmniej jeden próg.", color = MaterialTheme.colorScheme.error)
         }
         item {
-            TargetSwitch("Według daty", state.dateEnabled, !state.saving, onUseDate)
+            TargetSwitch("Termin według daty (zalecany)", state.dateEnabled, !state.saving, onUseDate, "Według daty")
             if (state.dateEnabled) {
                 ReminderDateField(state.dateMillis, car.year, !state.saving, state.submitted && errors.date, onDate)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -60,7 +60,7 @@ fun ReminderFormScreen(car: Car, state: ReminderFormState, onBack: () -> Unit,
             }
         }
         item {
-            TargetSwitch("Według przebiegu", state.mileageEnabled, !state.saving, onUseMileage)
+            TargetSwitch("Próg przebiegu (opcjonalnie)", state.mileageEnabled, !state.saving, onUseMileage, "Według przebiegu")
             if (state.mileageEnabled) {
                 MileageInput(state.mileage, onMileage, !state.saving, state.submitted && errors.mileage, label = "Przebieg docelowy *")
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -69,7 +69,8 @@ fun ReminderFormScreen(car: Car, state: ReminderFormState, onBack: () -> Unit,
                             enabled = !state.saving, label = { Text("Za ${delta / 1000} tys. km") })
                     }
                 }
-                Text("Aktualnie zapisany przebieg: ${car.mileage} km", style = MaterialTheme.typography.bodySmall)
+                Text("Próg będzie sprawdzany według ostatniego zapisanego licznika. Możesz potwierdzić jego aktualizację przy dodawaniu serwisu.", style = MaterialTheme.typography.bodySmall)
+                if (!state.dateEnabled) Text("Bez daty przypomnienie zależy wyłącznie od aktualności licznika. Zalecamy także ustawienie terminu.", style = MaterialTheme.typography.bodySmall)
             }
         }
         state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
@@ -84,11 +85,11 @@ fun ReminderFormScreen(car: Car, state: ReminderFormState, onBack: () -> Unit,
 }
 
 @Composable
-private fun TargetSwitch(label: String, checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit) {
+private fun TargetSwitch(label: String, checked: Boolean, enabled: Boolean, onChange: (Boolean) -> Unit, accessibilityLabel: String = label) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         Text(label, Modifier.weight(1f))
-        Switch(checked, onChange, enabled = enabled, modifier = Modifier.semanticsLabel(label))
+        Switch(checked, onChange, enabled = enabled, modifier = Modifier.semanticsLabel(accessibilityLabel))
     }
 }
 

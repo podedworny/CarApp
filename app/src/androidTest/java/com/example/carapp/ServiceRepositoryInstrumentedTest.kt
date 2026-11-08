@@ -98,6 +98,18 @@ class ServiceRepositoryInstrumentedTest {
         assertEquals(1, services.getEntries(first.id).size)
     }
 
+    @Test fun legacyCarsKeepUnknownDateUntilTheirMileageIsConfirmed() = runBlocking {
+        val raw = """[{"id":"legacy","brand":"Toyota","model":"Corolla","year":2010,"mileage":85000,"registration":""}]"""
+        context.getSharedPreferences(name, android.content.Context.MODE_PRIVATE).edit().putString("cars", raw).commit()
+        assertNull(cars.getCars().single().mileageUpdatedDateMillis)
+        val confirmedDate = ServiceDates.dateMillis(2026, 11, 8)
+        val datedCars = LocalCarRepository(storage) { confirmedDate }
+        datedCars.updateMileage("legacy", 85000)
+        val reopened = LocalCarRepository(LocalGarageStorage(context, preferenceName = name))
+        assertEquals(confirmedDate, reopened.getCars().single().mileageUpdatedDateMillis)
+        assertEquals(85000, reopened.getCars().single().mileage)
+    }
+
     private fun entry(id: String, carId: String, cost: Long?) = ServiceEntry(id, carId,
         ServiceType.MAINTENANCE, "Wymiana oleju", ServiceDates.dateMillis(2025, 1, 10), 50, cost, "Notatka")
 }

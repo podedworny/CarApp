@@ -116,6 +116,53 @@ class VehicleServiceViewModelTest {
         assertTrue(vm.state.value.form.visible)
     }
 
+    @Test fun `only a successfully saved higher reading creates a suggestion`() = runTest(dispatcher) {
+        val repo = FakeServiceRepository().apply { failSave = true }
+        val vm = model(repo)
+        advanceUntilIdle()
+        vm.openForm()
+        vm.changeField(ServiceField.TITLE, "Serwis")
+        vm.changeField(ServiceField.MILEAGE, "110000")
+        vm.save(currentMileage = 100000)
+        advanceUntilIdle()
+        assertNull(vm.state.value.suggestedMileage)
+        repo.failSave = false
+        vm.save(currentMileage = 100000)
+        advanceUntilIdle()
+        assertEquals(110000, vm.state.value.suggestedMileage)
+        vm.dismissMileageSuggestion()
+        assertNull(vm.state.value.suggestedMileage)
+        assertEquals(1, vm.state.value.entries.size)
+    }
+
+    @Test fun `suggestion uses current car reading rather than initial snapshot`() = runTest(dispatcher) {
+        val vm = model(FakeServiceRepository())
+        advanceUntilIdle()
+        vm.openForm(currentMileage = 150000)
+        vm.changeField(ServiceField.TITLE, "Starszy wpis")
+        vm.changeField(ServiceField.MILEAGE, "120000")
+        vm.save(currentMileage = 150000)
+        advanceUntilIdle()
+        assertNull(vm.state.value.suggestedMileage)
+    }
+
+    @Test fun `pending mileage suggestion survives saved state restoration`() = runTest(dispatcher) {
+        val repo = FakeServiceRepository()
+        val handle = SavedStateHandle()
+        val vm = VehicleServiceViewModel(car, repo, handle) { today }
+        advanceUntilIdle()
+        vm.openForm()
+        vm.changeField(ServiceField.TITLE, "Serwis")
+        vm.changeField(ServiceField.MILEAGE, "110000")
+        vm.save()
+        advanceUntilIdle()
+        val restored = VehicleServiceViewModel(car, repo, handle) { today }
+        advanceUntilIdle()
+        assertEquals(110000, restored.state.value.suggestedMileage)
+        restored.dismissMileageSuggestion()
+        assertNull(handle.get<Int>("suggestedMileage"))
+    }
+
     private fun model(repo: ServiceRepository) = VehicleServiceViewModel(car, repo, SavedStateHandle()) { today }
     private fun entry(id: String, carId: String, date: Long) = ServiceEntry(id, carId,
         ServiceType.MAINTENANCE, "Serwis", date, 50000, null)

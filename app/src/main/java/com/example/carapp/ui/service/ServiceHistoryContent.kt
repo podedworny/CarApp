@@ -13,7 +13,7 @@ import com.example.carapp.domain.model.ServiceType
 
 fun LazyListScope.serviceHistory(state: VehicleServiceState, onAdd: () -> Unit, onRetry: () -> Unit) {
     item {
-        Text("Historia serwisowa", style = MaterialTheme.typography.titleLarge)
+        Text("Historia serwisowa", style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(8.dp))
         Button(onClick = onAdd, enabled = !state.loading && !state.loadError) { Text("+ Dodaj wpis serwisowy") }
     }
@@ -60,7 +60,7 @@ fun LazyListScope.serviceCosts(state: VehicleServiceState, onAdd: () -> Unit, on
                         Text(formatCost(known.sumOf { it.costMinor!! }), style = MaterialTheme.typography.headlineLarge)
                         Text("Wpisy z podanym kosztem: ${known.size}")
                         if (unknown > 0) Text("Bez podanego kosztu: $unknown — nie są uwzględnione w sumie.")
-                        Text("Podsumowanie obejmuje wpisy serwisowe. Paliwo, ubezpieczenie i inne wydatki dodamy w kolejnych etapach.",
+                        Text("Suma kosztów zapisanych we wpisach serwisowych.",
                             style = MaterialTheme.typography.bodySmall)
                     }
                 }
