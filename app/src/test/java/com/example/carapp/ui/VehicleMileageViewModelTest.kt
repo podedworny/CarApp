@@ -69,6 +69,7 @@ class VehicleMileageViewModelTest {
         var fail = false
         override suspend fun getCars() = listOf(car)
         override suspend fun addCar(car: Car) = error("Unused")
+        override suspend fun updateCar(car: Car) = error("Unused")
         override suspend fun deleteCar(id: String) = error("Unused")
         override suspend fun updateMileage(id: String, mileage: Int): Car {
             calls++; check(!fail)

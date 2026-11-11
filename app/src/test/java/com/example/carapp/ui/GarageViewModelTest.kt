@@ -243,6 +243,12 @@ class GarageViewModelTest {
             cars.replaceAll { if (it.id == id) updated else it }
             return updated
         }
+        override suspend fun updateCar(car: Car): Car {
+            val existing = cars.first { it.id == car.id }
+            val updated = existing.copy(brand = car.brand, model = car.model, year = car.year, registration = car.registration)
+            cars.replaceAll { if (it.id == car.id) updated else it }
+            return updated
+        }
         override suspend fun deleteCar(id: String) {
             deleteCalls++
             check(!failDelete)

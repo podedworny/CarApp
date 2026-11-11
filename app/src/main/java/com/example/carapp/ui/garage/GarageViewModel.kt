@@ -34,6 +34,7 @@ class GarageViewModel(
     private val _garage = MutableStateFlow(GarageState())
     val garage = _garage.asStateFlow()
     val adding = savedState.getStateFlow("adding", false)
+    val editing = savedState.getStateFlow<String?>("editingCarId", null)
     val selectedCarId = savedState.getStateFlow<String?>("selectedCarId", null)
     private val _deletion = MutableStateFlow<DeleteCarState?>(null)
     val deletion = _deletion.asStateFlow()
@@ -88,6 +89,52 @@ class GarageViewModel(
         if (!_form.value.saving) {
             savedState["adding"] = false
             resetForm()
+        }
+    }
+
+    fun openEditCar(carId: String) {
+        if (_deletion.value != null || _form.value.saving) return
+        val car = _garage.value.cars.firstOrNull { it.id == carId } ?: return
+        savedState["editingCarId"] = carId
+        _form.value = AddCarState(
+            brand = car.brand, model = car.model, year = car.year.toString(),
+            mileage = car.mileage.toString(), registration = car.registration,
+            currentYear = _form.value.currentYear, editingCarId = carId
+        )
+    }
+
+    fun closeEditCar() {
+        if (!_form.value.saving) {
+            savedState["editingCarId"] = null
+            resetForm()
+        }
+    }
+
+    fun saveEditCar() {
+        val input = _form.value
+        val carId = input.editingCarId ?: return
+        if (input.saving || _garage.value.loading || _garage.value.loadError) return
+        _form.value = input.copy(submitted = true, saveError = null)
+        // In edit mode we skip mileage validation (it's not editable)
+        val validationErrors = input.errors
+        if (validationErrors.brand || validationErrors.model || validationErrors.year) return
+        val updatedCar = Car(id = carId, brand = input.brand.trim(), model = input.model.trim(),
+            year = input.year.toInt(), mileage = 0 /* will be ignored by updateCar */,
+            registration = input.registration.trim())
+        _form.value = _form.value.copy(saving = true)
+        viewModelScope.launch {
+            try {
+                val saved = repository.updateCar(updatedCar)
+                _garage.value = _garage.value.copy(cars = _garage.value.cars.map { if (it.id == carId) saved else it })
+                savedState["editingCarId"] = null
+                savedState["selectedCarId"] = carId
+                resetForm()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                _form.value = _form.value.copy(saving = false,
+                    saveError = "Nie udało się zapisać zmian. Spróbuj ponownie.")
+            }
         }
     }
 

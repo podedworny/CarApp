@@ -21,17 +21,15 @@ Przypomnienia pokazują status w aplikacji i pozwalają oznaczyć zadanie jako w
 
 | Priorytet | Funkcjonalność | Status |
 |---|---|---|
-| Must have | Dodawanie i edycja danych samochodu | Do zrobienia |
-| Must have | Prowadzenie historii napraw i czynności serwisowych | Do zrobienia |
-| Must have | Zapisywanie kosztów eksploatacji | Do zrobienia |
-| Must have | Przypomnienia o przeglądach i wymianach na podstawie daty lub przebiegu | Do zrobienia |
-| Must have | Prezentacja zapisanych danych w czytelnej formie | Do zrobienia |
+| Must have | Dodawanie i edycja danych samochodu | ✅ Zrobione |
+| Must have | Prowadzenie historii napraw i czynności serwisowych | ✅ Zrobione |
+| Must have | Zapisywanie kosztów eksploatacji | Częściowo (koszty serwisowe działają, brak pozaserwisowych) |
+| Must have | Przypomnienia o przeglądach i wymianach na podstawie daty lub przebiegu | ✅ Zrobione |
+| Must have | Prezentacja zapisanych danych w czytelnej formie | ✅ Zrobione |
 | Should have | Analiza parametrów pracy silnika na podstawie danych OBD-II | Do zrobienia |
 | Should have | Wykresy zmian parametrów w czasie | Do zrobienia |
 | Could have | Wykrywanie potencjalnych nieprawidłowości na podstawie odczytów | Do zrobienia |
 
 ## Postęp prac
--
--
--
-
+- 08.11 — Garaż, dodawanie aut, ekran pojazdu z 4 zakładkami, historia serwisowa, koszty, przypomnienia, usuwanie z potwierdzeniem, aktualizacja przebiegu, testy jednostkowe
+- 11.11 — Edycja danych samochodu z poziomu ekranu pojazdu

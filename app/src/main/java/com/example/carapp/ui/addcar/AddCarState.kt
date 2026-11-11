@@ -13,8 +13,11 @@ data class AddCarState(
     val currentYear: Int,
     val submitted: Boolean = false,
     val saving: Boolean = false,
-    val saveError: String? = null
+    val saveError: String? = null,
+    /** Non-null when editing an existing car. */
+    val editingCarId: String? = null
 ) {
+    val isEditing: Boolean get() = editingCarId != null
     val maximumYear: Int get() = currentYear + 1
     val errors get() = validateCar(brand, model, year, mileage, currentYear)
 }

@@ -27,21 +27,23 @@ fun AddCarScreen(state: AddCarState, modifier: Modifier = Modifier,
     val mileageValid = !errors.mileage
     LazyColumn(modifier.fillMaxSize().imePadding(), contentPadding = PaddingValues(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = onBack, enabled = !saving) { Text("← Wróć do garażu") } }
+        item { TextButton(onClick = onBack, enabled = !saving) { Text(if (state.isEditing) "← Wróć do pojazdu" else "← Wróć do garażu") } }
         item {
-            Text("Dodaj samochód", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            Text(if (state.isEditing) "Edytuj dane" else "Dodaj samochód", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(8.dp))
             Text("Podaj podstawowe dane. Pola oznaczone * są wymagane.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         item { VehicleSelectionField(brand, "Marka *", VehicleSuggestions.brands, { onChange(CarField.BRAND, it) }, enabled = !saving, error = if (submitted && errors.brand) "Wybierz markę" else null, customLimit = 50) }
         item { VehicleSelectionField(model, "Model *", VehicleSuggestions.models(brand), { onChange(CarField.MODEL, it) }, enabled = !saving && brand.isNotBlank(), error = if (submitted && errors.model) "Wybierz model" else null) }
         item { YearSelectionField(year, state.maximumYear, enabled = !saving, error = submitted && !yearValid, onSelect = { onChange(CarField.YEAR, it) }) }
-        item { MileageInput(mileage, { onChange(CarField.MILEAGE, it) }, enabled = !saving, error = submitted && !mileageValid) }
+        if (!state.isEditing) {
+            item { MileageInput(mileage, { onChange(CarField.MILEAGE, it) }, enabled = !saving, error = submitted && !mileageValid) }
+        }
         item { CarInputField(registration, { onChange(CarField.REGISTRATION, it) }, "Numer rejestracyjny", "Opcjonalnie", false, "", saving) }
         if (saveError != null) item { Text(saveError, color = MaterialTheme.colorScheme.error) }
         item {
             Button(onClick = onSave, enabled = !saving, modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
-                Text(if (saving) "Zapisywanie…" else "Zapisz samochód")
+                Text(if (saving) "Zapisywanie…" else if (state.isEditing) "Zapisz zmiany" else "Zapisz samochód")
             }
         }
     }

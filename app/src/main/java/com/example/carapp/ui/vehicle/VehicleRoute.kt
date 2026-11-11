@@ -21,7 +21,8 @@ import kotlinx.coroutines.isActive
 @Composable
 fun VehicleRoute(car: Car, repository: ServiceRepository, carRepository: CarRepository,
                  reminderRepository: ReminderRepository, onBack: () -> Unit,
-                 onDelete: () -> Unit, modifier: Modifier = Modifier, onCarUpdated: (Car) -> Unit = {}) {
+                 onDelete: () -> Unit, modifier: Modifier = Modifier, onCarUpdated: (Car) -> Unit = {},
+                 onEdit: () -> Unit = {}) {
     val serviceModel: VehicleServiceViewModel = viewModel(key = "vehicle-service:${car.id}",
         factory = VehicleServiceViewModel.Factory(car, repository))
     val reminderModel: ReminderViewModel = viewModel(key = "vehicle-reminders:${car.id}",
@@ -63,7 +64,8 @@ fun VehicleRoute(car: Car, repository: ServiceRepository, carRepository: CarRepo
                 onAddService = { serviceModel.openForm(currentCar.mileage) }, onRetryService = serviceModel::load,
                 reminderState = reminders, todayMillis = today,
                 onAddReminder = { reminderModel.openForm(currentCar.mileage) }, onRetryReminders = reminderModel::load,
-                onCompleteReminder = reminderModel::toggleCompleted, onMileage = { mileageModel.open(currentCar.mileage) })
+                onCompleteReminder = reminderModel::toggleCompleted, onMileage = { mileageModel.open(currentCar.mileage) },
+                onEdit = onEdit)
         }
     }
 }

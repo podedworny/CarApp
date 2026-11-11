@@ -29,7 +29,7 @@ fun VehicleScreen(car: Car, onBack: () -> Unit, onDelete: () -> Unit, modifier: 
     onAddService: () -> Unit = {}, onRetryService: () -> Unit = {},
     reminderState: ReminderState = ReminderState(loading = false), todayMillis: Long = ServiceDates.todayMillis(),
     onAddReminder: () -> Unit = {}, onRetryReminders: () -> Unit = {},
-    onCompleteReminder: (String) -> Unit = {}, onMileage: () -> Unit = {}) {
+    onCompleteReminder: (String) -> Unit = {}, onMileage: () -> Unit = {}, onEdit: () -> Unit = {}) {
     var sectionName by rememberSaveable(car.id) { mutableStateOf(VehicleSection.OVERVIEW.name) }
     var menuOpen by rememberSaveable(car.id) { mutableStateOf(false) }
     val section = VehicleSection.valueOf(sectionName)
@@ -44,6 +44,7 @@ fun VehicleScreen(car: Car, onBack: () -> Unit, onDelete: () -> Unit, modifier: 
                 IconButton(onClick = { menuOpen = true }) { AppIcon(CarAppIcon.MORE, "Akcje pojazdu") }
                 DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
                     DropdownMenuItem(text = { Text("Aktualizuj przebieg") }, onClick = { menuOpen = false; onMileage() })
+                    DropdownMenuItem(text = { Text("Edytuj dane") }, onClick = { menuOpen = false; onEdit() })
                     DropdownMenuItem(text = { Text("Usuń samochód", color = MaterialTheme.colorScheme.error) },
                         onClick = { menuOpen = false; onDelete() })
                 }

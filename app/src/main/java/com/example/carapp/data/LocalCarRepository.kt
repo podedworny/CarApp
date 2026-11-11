@@ -25,6 +25,15 @@ class LocalCarRepository(private val storage: LocalGarageStorage, private val to
         updated
     }
 
+    override suspend fun updateCar(car: Car): Car = storage.access { preferences ->
+        val cars = decodeCars(preferences.getString("cars", "[]"))
+        val existing = cars.firstOrNull { it.id == car.id } ?: error("Vehicle no longer exists")
+        // Preserve the current mileage and mileageUpdatedDateMillis – those are updated via updateMileage only.
+        val updated = existing.copy(brand = car.brand, model = car.model, year = car.year, registration = car.registration)
+        check(preferences.edit().putString("cars", encodeCars(cars.map { if (it.id == car.id) updated else it })).commit())
+        updated
+    }
+
     override suspend fun deleteCar(id: String): Unit = storage.access { preferences ->
         val cars = decodeCars(preferences.getString("cars", "[]"))
         // Remove the car and its service history in the same persisted transaction.
