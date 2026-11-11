@@ -14,6 +14,8 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.carapp.ui.components.AppIcon
+import com.example.carapp.ui.components.CarAppIcon
 
 internal fun yearsInDecade(decade: Int, maximumYear: Int): List<Int> =
     (decade..decade + 9).filter { it in 1886..maximumYear }
@@ -25,7 +27,7 @@ fun YearSelectionField(value: String, maximumYear: Int, enabled: Boolean,
     Box {
         OutlinedTextField(value, {}, readOnly = true, enabled = enabled,
             label = { Text("Rok produkcji *") }, placeholder = { Text("Wybierz rocznik") },
-            trailingIcon = { Text("▾") }, isError = error, modifier = Modifier.fillMaxWidth(),
+            trailingIcon = { AppIcon(CarAppIcon.DROPDOWN) }, isError = error, modifier = Modifier.fillMaxWidth(),
             supportingText = { Text(if (error) "Wybierz rok produkcji" else "Dostępne roczniki: 1886–$maximumYear") })
         Box(Modifier.matchParentSize().semantics {
             contentDescription = "Rok produkcji, ${value.ifBlank { "Nie wybrano" }}"
@@ -51,7 +53,10 @@ private fun YearSelectionDialog(initialYear: Int, maximumYear: Int,
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     TextButton(onClick = { decade -= 10 }, enabled = decade > 1880, modifier = Modifier.semantics { contentDescription = "Starsza dekada" }) { Text("←") }
                     Box {
-                        TextButton(onClick = { choosingDecade = true }) { Text("${decade}–${minOf(decade + 9, maximumYear)} ▾") }
+                        TextButton(onClick = { choosingDecade = true }) {
+                            Text("${decade}–${minOf(decade + 9, maximumYear)}")
+                            AppIcon(CarAppIcon.DROPDOWN, tint = MaterialTheme.colorScheme.primary)
+                        }
                         DropdownMenu(expanded = choosingDecade, onDismissRequest = { choosingDecade = false },
                             modifier = Modifier.heightIn(max = 300.dp)) {
                             (maximumYear / 10 * 10 downTo 1880 step 10).forEach { start ->

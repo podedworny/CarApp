@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.example.carapp.domain.validation.ServiceDates
 import com.example.carapp.domain.model.Car
+import com.example.carapp.domain.model.FuelSource
 import com.example.carapp.domain.repository.CarRepository
 import com.example.carapp.ui.addcar.AddCarState
 import com.example.carapp.ui.addcar.CarField
@@ -44,7 +45,9 @@ class GarageViewModel(
         year = savedState["year"] ?: "",
         mileage = savedState["mileage"] ?: "",
         registration = savedState["registration"] ?: "",
-        currentYear = currentYear
+        fuelSources = decodeFuelSources(savedState.get<String>("fuelSources")),
+        currentYear = currentYear,
+        editingCarId = savedState["editingCarId"]
     ))
     val form = _form.asStateFlow()
 
@@ -96,9 +99,11 @@ class GarageViewModel(
         if (_deletion.value != null || _form.value.saving) return
         val car = _garage.value.cars.firstOrNull { it.id == carId } ?: return
         savedState["editingCarId"] = carId
+        savedState["fuelSources"] = encodeFuelSources(car.fuelSources)
         _form.value = AddCarState(
             brand = car.brand, model = car.model, year = car.year.toString(),
             mileage = car.mileage.toString(), registration = car.registration,
+            fuelSources = car.fuelSources,
             currentYear = _form.value.currentYear, editingCarId = carId
         )
     }
@@ -117,10 +122,10 @@ class GarageViewModel(
         _form.value = input.copy(submitted = true, saveError = null)
         // In edit mode we skip mileage validation (it's not editable)
         val validationErrors = input.errors
-        if (validationErrors.brand || validationErrors.model || validationErrors.year) return
+        if (validationErrors.brand || validationErrors.model || validationErrors.year || input.fuelError) return
         val updatedCar = Car(id = carId, brand = input.brand.trim(), model = input.model.trim(),
             year = input.year.toInt(), mileage = 0 /* will be ignored by updateCar */,
-            registration = input.registration.trim())
+            registration = input.registration.trim(), fuelSources = input.fuelSources)
         _form.value = _form.value.copy(saving = true)
         viewModelScope.launch {
             try {
@@ -136,6 +141,14 @@ class GarageViewModel(
                     saveError = "Nie udało się zapisać zmian. Spróbuj ponownie.")
             }
         }
+    }
+
+    fun toggleFuelSource(source: FuelSource) {
+        if (_form.value.saving) return
+        val current = _form.value.fuelSources
+        val updated = if (source in current) current - source else current + source
+        savedState["fuelSources"] = encodeFuelSources(updated)
+        _form.value = _form.value.copy(fuelSources = updated, saveError = null)
     }
 
     fun changeField(field: CarField, value: String) {
@@ -165,11 +178,12 @@ class GarageViewModel(
         val input = _form.value
         if (!adding.value || input.saving || _garage.value.loading || _garage.value.loadError) return
         _form.value = input.copy(submitted = true, saveError = null)
-        if (!input.errors.isValid) return
+        if (!input.errors.isValid || input.fuelError) return
         val draftId = savedState.get<String>("draftCarId") ?: UUID.randomUUID().toString().also { savedState["draftCarId"] = it }
         val car = Car(id = draftId, brand = input.brand.trim(), model = input.model.trim(),
             year = input.year.toInt(), mileage = input.mileage.toInt(),
-            registration = input.registration.trim(), mileageUpdatedDateMillis = ServiceDates.todayMillis())
+            registration = input.registration.trim(), mileageUpdatedDateMillis = ServiceDates.todayMillis(),
+            fuelSources = input.fuelSources)
         _form.value = _form.value.copy(saving = true)
         viewModelScope.launch {
             try {
@@ -223,8 +237,17 @@ class GarageViewModel(
 
     private fun resetForm() {
         savedState.remove<String>("draftCarId")
+        savedState.remove<String>("fuelSources")
         CarField.entries.forEach { savedState[it.name.lowercase(Locale.ROOT)] = "" }
         _form.value = AddCarState(currentYear = _form.value.currentYear)
+    }
+
+    private fun encodeFuelSources(sources: Set<FuelSource>): String = sources.joinToString(",") { it.name }
+
+    private fun decodeFuelSources(raw: String?): Set<FuelSource> = when {
+        raw == null -> setOf(FuelSource.PETROL)
+        raw.isBlank() -> emptySet()
+        else -> raw.split(",").mapNotNull { name -> runCatching { FuelSource.valueOf(name) }.getOrNull() }.toSet()
     }
 
     class Factory(private val repository: CarRepository) : ViewModelProvider.Factory {

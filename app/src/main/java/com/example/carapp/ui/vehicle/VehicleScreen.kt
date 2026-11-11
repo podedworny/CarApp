@@ -11,8 +11,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.carapp.domain.model.Car
+import com.example.carapp.domain.model.ExpenseType
+import com.example.carapp.domain.model.ServiceEntry
+import com.example.carapp.domain.model.ServiceType
 import com.example.carapp.domain.validation.ServiceDates
 import com.example.carapp.ui.components.*
+import com.example.carapp.ui.expenses.VehicleExpenseState
+import com.example.carapp.ui.expenses.vehicleCosts
 import com.example.carapp.ui.reminders.ReminderState
 import com.example.carapp.ui.reminders.reminderContent
 import com.example.carapp.ui.service.*
@@ -27,6 +32,11 @@ private enum class VehicleSection(val title: String, val icon: CarAppIcon) {
 fun VehicleScreen(car: Car, onBack: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier,
     serviceState: VehicleServiceState = VehicleServiceState(loading = false),
     onAddService: () -> Unit = {}, onRetryService: () -> Unit = {},
+    onEditService: (ServiceEntry) -> Unit = {}, onDeleteService: (ServiceEntry) -> Unit = {},
+    onOpenServiceCategory: (ServiceType) -> Unit = {},
+    expenseState: VehicleExpenseState = VehicleExpenseState(loading = false),
+    onAddExpense: () -> Unit = {}, onRetryExpense: () -> Unit = {},
+    onOpenExpenseCategory: (ExpenseType) -> Unit = {},
     reminderState: ReminderState = ReminderState(loading = false), todayMillis: Long = ServiceDates.todayMillis(),
     onAddReminder: () -> Unit = {}, onRetryReminders: () -> Unit = {},
     onCompleteReminder: (String) -> Unit = {}, onMileage: () -> Unit = {}, onEdit: () -> Unit = {}) {
@@ -54,13 +64,23 @@ fun VehicleScreen(car: Car, onBack: () -> Unit, onDelete: () -> Unit, modifier: 
             LazyColumn(Modifier.weight(1f).fillMaxWidth(), contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 when (section) {
-                    VehicleSection.OVERVIEW -> vehicleOverview(car, serviceState, reminderState, todayMillis, onMileage,
+                    VehicleSection.OVERVIEW -> vehicleOverview(car, serviceState, reminderState, expenseState, todayMillis, onMileage,
                         onService = { sectionName = VehicleSection.SERVICE.name },
                         onReminders = { sectionName = VehicleSection.REMINDERS.name },
                         onCosts = { sectionName = VehicleSection.COSTS.name },
                         onAddService = { sectionName = VehicleSection.SERVICE.name; onAddService() }, onRetryService = onRetryService)
-                    VehicleSection.SERVICE -> serviceHistory(serviceState, onAddService, onRetryService)
-                    VehicleSection.COSTS -> serviceCosts(serviceState, onAddService, onRetryService)
+                    VehicleSection.SERVICE -> serviceHistory(serviceState, onAddService, onRetryService, onEditService, onDeleteService)
+                    VehicleSection.COSTS -> vehicleCosts(
+                        serviceState = serviceState,
+                        expenseState = expenseState,
+                        fuelSources = car.fuelSources,
+                        onAddService = onAddService,
+                        onRetryService = onRetryService,
+                        onOpenServiceCategory = onOpenServiceCategory,
+                        onAddExpense = onAddExpense,
+                        onRetryExpense = onRetryExpense,
+                        onOpenExpenseCategory = onOpenExpenseCategory
+                    )
                     VehicleSection.REMINDERS -> reminderContent(reminderState, car, todayMillis, onAddReminder, onRetryReminders, onCompleteReminder)
                 }
             }

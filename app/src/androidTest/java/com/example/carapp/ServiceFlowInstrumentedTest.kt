@@ -24,6 +24,7 @@ class ServiceFlowInstrumentedTest {
     private val name = "test-flow-${UUID.randomUUID()}"
     private val storage = LocalGarageStorage(context, preferenceName = name)
     private val services = LocalServiceRepository(storage)
+    private val expenses = LocalExpenseRepository(storage)
     private val car = Car(id = "ui-test", brand = "Toyota", model = "Corolla", year = 2010, mileage = 85000, registration = "TEST")
 
     @After fun cleanUp() { context.deleteSharedPreferences(name) }
@@ -37,7 +38,7 @@ class ServiceFlowInstrumentedTest {
         val cars = LocalCarRepository(storage)
         val reminders = LocalReminderRepository(storage)
         runBlocking { cars.addCar(car) }
-        compose.setContent { CarAppTheme { VehicleRoute(car, services, cars, reminders, onBack = {}, onDelete = {}) } }
+        compose.setContent { CarAppTheme { VehicleRoute(car, services, cars, reminders, expenses, onBack = {}, onDelete = {}) } }
         compose.onNodeWithText("Terminy").performClick()
         compose.waitUntil(5000) {
             compose.onAllNodes(hasText("+ Dodaj przypomnienie") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
@@ -68,7 +69,7 @@ class ServiceFlowInstrumentedTest {
         val cars = LocalCarRepository(storage)
         val reminders = LocalReminderRepository(storage)
         runBlocking { cars.addCar(car) }
-        compose.setContent { CarAppTheme { VehicleRoute(car, services, cars, reminders, onBack = {}, onDelete = {}) } }
+        compose.setContent { CarAppTheme { VehicleRoute(car, services, cars, reminders, expenses, onBack = {}, onDelete = {}) } }
         compose.onNodeWithText("Terminy").performClick()
         compose.waitUntil(5000) {
             compose.onAllNodes(hasText("+ Dodaj przypomnienie") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
@@ -78,7 +79,7 @@ class ServiceFlowInstrumentedTest {
         androidx.test.espresso.Espresso.closeSoftKeyboard()
         compose.onNodeWithContentDescription("Wybierz termin przypomnienia").performScrollTo().performClick()
         compose.onNodeWithText("Wybierz").performClick()
-        scrollTo("← Wróć do pojazdu").performClick()
+        scrollTo("Wróć do pojazdu").performClick()
         compose.onNodeWithText("+ Dodaj przypomnienie").performClick()
         compose.onNodeWithText("Badanie testowe").assertExists()
         scrollTo("Zapisz przypomnienie").performClick()
@@ -92,7 +93,7 @@ class ServiceFlowInstrumentedTest {
     @Test fun serviceMileageSuggestionCanBeSkippedOrAcceptedWithoutLosingEntry() {
         val cars = LocalCarRepository(storage)
         runBlocking { cars.addCar(car) }
-        compose.setContent { CarAppTheme { VehicleRoute(car, services, cars, LocalReminderRepository(storage), onBack = {}, onDelete = {}) } }
+        compose.setContent { CarAppTheme { VehicleRoute(car, services, cars, LocalReminderRepository(storage), expenses, onBack = {}, onDelete = {}) } }
         compose.onNodeWithText("Serwis").performClick()
         compose.waitUntil(5000) {
             compose.onAllNodes(hasText("+ Dodaj wpis serwisowy") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
@@ -125,7 +126,7 @@ class ServiceFlowInstrumentedTest {
 
     @Test fun addServiceAndSeeItInHistoryAndCostSummary() {
         runBlocking { LocalCarRepository(storage).addCar(car) }
-        compose.setContent { CarAppTheme { VehicleRoute(car, services, LocalCarRepository(storage), LocalReminderRepository(storage), onBack = {}, onDelete = {}) } }
+        compose.setContent { CarAppTheme { VehicleRoute(car, services, LocalCarRepository(storage), LocalReminderRepository(storage), expenses, onBack = {}, onDelete = {}) } }
         compose.onNodeWithText("Serwis").performClick()
         compose.waitUntil(5000) {
             compose.onAllNodes(hasText("+ Dodaj wpis serwisowy") and isEnabled()).fetchSemanticsNodes().isNotEmpty()
@@ -140,7 +141,7 @@ class ServiceFlowInstrumentedTest {
         compose.waitUntil(5000) { compose.onAllNodesWithText("Serwis").fetchSemanticsNodes().isNotEmpty() }
         scrollTo("Serwis testowy").assertIsDisplayed()
         compose.onNodeWithText("Koszty").performClick()
-        scrollTo("Łączne koszty serwisu").assertIsDisplayed()
+        scrollTo("Łączne koszty pojazdu").assertIsDisplayed()
         compose.onAllNodesWithText(formatCost(45035)).onFirst().assertIsDisplayed()
         val persisted = runBlocking { services.getEntries(car.id).single() }
         assertEquals(45035L, persisted.costMinor)

@@ -13,3 +13,9 @@ fun formatServiceDate(dateMillis: Long): String = SimpleDateFormat("dd.MM.yyyy",
 
 fun formatCost(costMinor: Long): String = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("pl-PL"))
     .format(BigDecimal.valueOf(costMinor, 2))
+
+fun formatCostInput(costMinor: Long): String {
+    val major = costMinor / 100
+    val minor = costMinor % 100
+    return if (minor == 0L) major.toString() else "$major,${minor.toString().padStart(2, '0')}"
+}

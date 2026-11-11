@@ -20,5 +20,6 @@ class LocalGarageStorage(context: Context, private val ioDispatcher: CoroutineDi
     companion object {
         fun reminderKey(carId: String) = "reminders:$carId"
         fun serviceKey(carId: String) = "service:$carId"
+        fun expenseKey(carId: String) = "expenses:$carId"
     }
 }

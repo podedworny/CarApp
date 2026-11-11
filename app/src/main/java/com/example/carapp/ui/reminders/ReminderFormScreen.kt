@@ -17,6 +17,9 @@ import com.example.carapp.domain.model.Car
 import com.example.carapp.domain.validation.ServiceDates
 import com.example.carapp.domain.validation.validateReminder
 import com.example.carapp.ui.addcar.MileageInput
+import com.example.carapp.ui.components.AppIcon
+import com.example.carapp.ui.components.BackFormButton
+import com.example.carapp.ui.components.CarAppIcon
 import com.example.carapp.ui.service.formatServiceDate
 import java.util.Calendar
 
@@ -27,7 +30,7 @@ fun ReminderFormScreen(car: Car, state: ReminderFormState, onBack: () -> Unit,
     modifier: Modifier = Modifier) {
     val errors = validateReminder(state.title, state.dateEnabled, state.dateMillis, state.mileageEnabled, state.mileage, car.year)
     LazyColumn(modifier.fillMaxSize().imePadding(), contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = onBack, enabled = !state.saving) { Text("← Wróć do pojazdu") } }
+        item { BackFormButton("Wróć do pojazdu", onBack, enabled = !state.saving) }
         item {
             Text("Nowe przypomnienie", style = MaterialTheme.typography.headlineMedium)
             Text("${car.brand} ${car.model}")
@@ -101,7 +104,7 @@ private fun ReminderDateField(value: Long?, productionYear: Int, enabled: Boolea
     var open by rememberSaveable { mutableStateOf(false) }
     Box {
         OutlinedTextField(value?.let(::formatServiceDate).orEmpty(), {}, readOnly = true, enabled = enabled,
-            label = { Text("Termin *") }, trailingIcon = { Text("▾") }, isError = error,
+            label = { Text("Termin *") }, trailingIcon = { AppIcon(CarAppIcon.DROPDOWN) }, isError = error,
             supportingText = { if (error) Text("Wybierz datę od roku produkcji") }, modifier = Modifier.fillMaxWidth())
         Box(Modifier.matchParentSize().semantics { contentDescription = "Wybierz termin przypomnienia" }.clickable(enabled = enabled, role = Role.Button, onClickLabel = "Wybierz termin") { open = true })
     }

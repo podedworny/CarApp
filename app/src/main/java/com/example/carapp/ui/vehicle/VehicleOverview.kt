@@ -11,6 +11,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.example.carapp.domain.model.*
 import com.example.carapp.ui.components.*
+import com.example.carapp.ui.expenses.VehicleExpenseState
 import com.example.carapp.ui.reminders.ReminderState
 import com.example.carapp.ui.service.VehicleServiceState
 import com.example.carapp.ui.service.formatCost
@@ -18,7 +19,7 @@ import java.text.NumberFormat
 import java.util.Locale
 
 internal fun LazyListScope.vehicleOverview(car: Car, service: VehicleServiceState, reminders: ReminderState,
-    today: Long, onMileage: () -> Unit, onService: () -> Unit, onReminders: () -> Unit,
+    expense: VehicleExpenseState, today: Long, onMileage: () -> Unit, onService: () -> Unit, onReminders: () -> Unit,
     onCosts: () -> Unit, onAddService: () -> Unit, onRetryService: () -> Unit) {
     item {
         BoxWithConstraints {
@@ -32,7 +33,8 @@ internal fun LazyListScope.vehicleOverview(car: Car, service: VehicleServiceStat
                             Spacer(Modifier.height(6.dp))
                             Text(car.model, style = MaterialTheme.typography.headlineMedium)
                             Spacer(Modifier.height(6.dp))
-                            Text("Rok produkcji ${car.year}", style = MaterialTheme.typography.bodySmall)
+                            val fuelInfo = if (car.fuelSources.isNotEmpty()) " · ${car.fuelSources.displaySummary()}" else ""
+                            Text("Rok produkcji ${car.year}$fuelInfo", style = MaterialTheme.typography.bodySmall)
                         }
                         VehicleEmblem(Modifier.width(if (compact) 56.dp else 80.dp).height(80.dp))
                     }
@@ -84,9 +86,13 @@ internal fun LazyListScope.vehicleOverview(car: Car, service: VehicleServiceStat
                 AppIcon(CarAppIcon.COSTS, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("Koszty serwisu", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(if (service.loading || service.loadError) "—" else formatCost(service.entries.sumOf { it.costMinor ?: 0 }),
-                        style = MaterialTheme.typography.titleLarge)
+                    Text("Łączne koszty pojazdu", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val totalCost = if (service.loading || service.loadError || expense.loading || expense.loadError) {
+                        "—"
+                    } else {
+                        formatCost(service.entries.sumOf { it.costMinor ?: 0 } + expense.entries.sumOf { it.costMinor })
+                    }
+                    Text(totalCost, style = MaterialTheme.typography.titleLarge)
                 }
                 AppIcon(CarAppIcon.NEXT)
             }

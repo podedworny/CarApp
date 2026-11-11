@@ -13,6 +13,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.example.carapp.ui.components.AppIcon
+import com.example.carapp.ui.components.CarAppIcon
 
 /** A read-only selector that opens a searchable, scrollable list without showing a keyboard. */
 @Composable
@@ -31,7 +33,7 @@ fun VehicleSelectionField(
     Box(modifier) {
         OutlinedTextField(value = value, onValueChange = {}, readOnly = true,
             enabled = enabled, label = { Text(label) }, placeholder = { Text("Wybierz z listy") },
-            trailingIcon = { Text("▾") }, isError = error != null,
+            trailingIcon = { AppIcon(CarAppIcon.DROPDOWN) }, isError = error != null,
             supportingText = error?.let { { Text(it) } }, modifier = Modifier.fillMaxWidth())
         // Overlay makes the complete field a single accessible button, including its label.
         Box(Modifier.matchParentSize().semantics { contentDescription = "$label, ${value.ifBlank { "Nie wybrano" }}" }.clickable(enabled = enabled, role = Role.Button,

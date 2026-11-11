@@ -20,16 +20,24 @@ class LocalServiceRepository(private val storage: LocalGarageStorage) : ServiceR
         val entries = decode(preferences.getString(key, "[]"), entry.carId)
         // Stable entry IDs make retrying a write idempotent.
         val updated = entries.filterNot { it.id == entry.id } + entry
-        val json = JSONArray().apply {
-            updated.forEach { item ->
-                put(JSONObject().put("id", item.id).put("type", item.type.name)
-                    .put("title", item.title).put("dateMillis", item.dateMillis)
-                    .put("mileage", item.mileage).put("costMinor", item.costMinor ?: JSONObject.NULL)
-                    .put("note", item.note))
-            }
-        }
-        check(preferences.edit().putString(key, json.toString()).commit()) { "Cannot save service" }
+        check(preferences.edit().putString(key, encode(updated)).commit()) { "Cannot save service" }
     }
+
+    override suspend fun deleteEntry(carId: String, entryId: String): Unit = storage.access { preferences ->
+        val key = LocalGarageStorage.serviceKey(carId)
+        val entries = decode(preferences.getString(key, "[]"), carId)
+        val updated = entries.filterNot { it.id == entryId }
+        check(preferences.edit().putString(key, encode(updated)).commit()) { "Cannot delete service" }
+    }
+
+    private fun encode(entries: List<ServiceEntry>): String = JSONArray().apply {
+        entries.forEach { item ->
+            put(JSONObject().put("id", item.id).put("type", item.type.name)
+                .put("title", item.title).put("dateMillis", item.dateMillis)
+                .put("mileage", item.mileage).put("costMinor", item.costMinor ?: JSONObject.NULL)
+                .put("note", item.note))
+        }
+    }.toString()
 
     private fun decode(json: String?, carId: String): List<ServiceEntry> {
         val array = JSONArray(json)

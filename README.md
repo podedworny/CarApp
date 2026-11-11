@@ -23,7 +23,7 @@ Przypomnienia pokazują status w aplikacji i pozwalają oznaczyć zadanie jako w
 |---|---|---|
 | Must have | Dodawanie i edycja danych samochodu | ✅ Zrobione |
 | Must have | Prowadzenie historii napraw i czynności serwisowych | ✅ Zrobione |
-| Must have | Zapisywanie kosztów eksploatacji | Częściowo (koszty serwisowe działają, brak pozaserwisowych) |
+| Must have | Zapisywanie kosztów eksploatacji | ✅ Zrobione |
 | Must have | Przypomnienia o przeglądach i wymianach na podstawie daty lub przebiegu | ✅ Zrobione |
 | Must have | Prezentacja zapisanych danych w czytelnej formie | ✅ Zrobione |
 | Should have | Analiza parametrów pracy silnika na podstawie danych OBD-II | Do zrobienia |
@@ -33,3 +33,4 @@ Przypomnienia pokazują status w aplikacji i pozwalają oznaczyć zadanie jako w
 ## Postęp prac
 - 08.11 — Garaż, dodawanie aut, ekran pojazdu z 4 zakładkami, historia serwisowa, koszty, przypomnienia, usuwanie z potwierdzeniem, aktualizacja przebiegu, testy jednostkowe
 - 11.11 — Edycja danych samochodu z poziomu ekranu pojazdu
+- 12.11 — Koszty eksploatacyjne z doborem napędu auta, podstrony kategorii kosztów oraz edycja i usuwanie wpisów serwisowych i eksploatacyjnych

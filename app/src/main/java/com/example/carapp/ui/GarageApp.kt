@@ -34,13 +34,14 @@ fun GarageApp(viewModel: GarageViewModel, container: AppContainer) {
         if (adding) {
             AddCarScreen(state = form, modifier = Modifier.padding(padding),
                 onBack = viewModel::closeAddCar, onChange = viewModel::changeField,
-                onSave = viewModel::saveCar)
+                onToggleFuel = viewModel::toggleFuelSource, onSave = viewModel::saveCar)
         } else if (editingCarId != null) {
             AddCarScreen(state = form, modifier = Modifier.padding(padding),
                 onBack = viewModel::closeEditCar, onChange = viewModel::changeField,
-                onSave = viewModel::saveEditCar)
+                onToggleFuel = viewModel::toggleFuelSource, onSave = viewModel::saveEditCar)
         } else if (selectedCar != null) {
-            VehicleRoute(selectedCar, container.serviceRepository, container.carRepository, container.reminderRepository, onBack = viewModel::closeVehicle,
+            VehicleRoute(selectedCar, container.serviceRepository, container.carRepository, container.reminderRepository,
+                container.expenseRepository, onBack = viewModel::closeVehicle,
                 onDelete = { viewModel.requestDeleteCar(selectedCar.id) }, modifier = Modifier.padding(padding), onCarUpdated = viewModel::updateCarSnapshot,
                 onEdit = { viewModel.openEditCar(selectedCar.id) })
         } else {

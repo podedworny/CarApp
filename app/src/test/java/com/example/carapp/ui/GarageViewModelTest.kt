@@ -2,6 +2,7 @@ package com.example.carapp.ui
 
 import androidx.lifecycle.SavedStateHandle
 import com.example.carapp.domain.model.Car
+import com.example.carapp.domain.model.FuelSource
 import com.example.carapp.domain.repository.CarRepository
 import com.example.carapp.ui.addcar.CarField
 import com.example.carapp.ui.garage.GarageViewModel
@@ -220,6 +221,28 @@ class GarageViewModelTest {
         assertEquals(firstId, repository.cars.single().id)
     }
 
+    @Test fun `fuel sources can combine multiple types and be edited while preserving mileage`() = runTest(dispatcher) {
+        val repository = FakeCarRepository()
+        val vm = GarageViewModel(repository, SavedStateHandle(), 2026)
+        advanceUntilIdle()
+        vm.openAddCar()
+        fillForm(vm)
+        vm.toggleFuelSource(FuelSource.LPG)
+        vm.saveCar()
+        advanceUntilIdle()
+        val saved = repository.cars.single()
+        assertEquals(setOf(FuelSource.PETROL, FuelSource.LPG), saved.fuelSources)
+
+        vm.openEditCar(saved.id)
+        vm.toggleFuelSource(FuelSource.LPG)
+        vm.toggleFuelSource(FuelSource.ELECTRIC)
+        vm.saveEditCar()
+        advanceUntilIdle()
+        val updated = repository.cars.single()
+        assertEquals(setOf(FuelSource.PETROL, FuelSource.ELECTRIC), updated.fuelSources)
+        assertEquals(85000, updated.mileage)
+    }
+
     private fun fillForm(vm: GarageViewModel) {
         vm.changeField(CarField.BRAND, " Toyota ")
         vm.changeField(CarField.MODEL, "Corolla")
@@ -245,7 +268,13 @@ class GarageViewModelTest {
         }
         override suspend fun updateCar(car: Car): Car {
             val existing = cars.first { it.id == car.id }
-            val updated = existing.copy(brand = car.brand, model = car.model, year = car.year, registration = car.registration)
+            val updated = existing.copy(
+                brand = car.brand,
+                model = car.model,
+                year = car.year,
+                registration = car.registration,
+                fuelSources = car.fuelSources
+            )
             cars.replaceAll { if (it.id == car.id) updated else it }
             return updated
         }

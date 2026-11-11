@@ -163,6 +163,41 @@ class VehicleServiceViewModelTest {
         assertNull(handle.get<Int>("suggestedMileage"))
     }
 
+    @Test fun `edit entry updates existing item and delete requires confirmation`() = runTest(dispatcher) {
+        val repo = FakeServiceRepository()
+        val original = ServiceEntry("svc-1", car.id, ServiceType.MAINTENANCE, "Wymiana oleju", today, 100000, 35050, "Warsztat")
+        repo.entries += original
+        val vm = model(repo)
+        advanceUntilIdle()
+
+        vm.openEditForm(original)
+        assertTrue(vm.state.value.form.isEditing)
+        assertEquals("350,50", vm.state.value.form.cost)
+        vm.changeField(ServiceField.TITLE, "Wymiana oleju i filtrów")
+        vm.changeField(ServiceField.COST, "400")
+        vm.save()
+        advanceUntilIdle()
+
+        val updated = repo.entries.single()
+        assertEquals("svc-1", updated.id)
+        assertEquals("Wymiana oleju i filtrów", updated.title)
+        assertEquals(40000L, updated.costMinor)
+        assertFalse(vm.state.value.form.visible)
+
+        vm.requestDelete(updated)
+        assertEquals(updated, vm.state.value.deletingEntry)
+        vm.cancelDelete()
+        assertNull(vm.state.value.deletingEntry)
+        assertEquals(1, repo.entries.size)
+
+        vm.requestDelete(updated)
+        vm.confirmDelete()
+        advanceUntilIdle()
+        assertTrue(repo.entries.isEmpty())
+        assertTrue(vm.state.value.entries.isEmpty())
+        assertNull(vm.state.value.deletingEntry)
+    }
+
     private fun model(repo: ServiceRepository) = VehicleServiceViewModel(car, repo, SavedStateHandle()) { today }
     private fun entry(id: String, carId: String, date: Long) = ServiceEntry(id, carId,
         ServiceType.MAINTENANCE, "Serwis", date, 50000, null)
@@ -172,6 +207,7 @@ class VehicleServiceViewModelTest {
         val attempts = mutableListOf<ServiceEntry>()
         var failSave = false
         var failLoad = false
+        var failDelete = false
         override suspend fun getEntries(carId: String): List<ServiceEntry> {
             check(!failLoad)
             return entries.filter { it.carId == carId }
@@ -181,6 +217,10 @@ class VehicleServiceViewModelTest {
             check(!failSave)
             entries.removeAll { it.id == entry.id }
             entries += entry
+        }
+        override suspend fun deleteEntry(carId: String, entryId: String) {
+            check(!failDelete)
+            entries.removeAll { it.carId == carId && it.id == entryId }
         }
     }
 }

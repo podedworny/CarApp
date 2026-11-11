@@ -28,6 +28,7 @@ class VehicleServiceViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(VehicleServiceState(suggestedMileage = savedState["suggestedMileage"], form = ServiceFormState(
         visible = savedState["visible"] ?: false,
+        editingEntryId = savedState["editingEntryId"],
         type = ServiceType.valueOf(savedState["type"] ?: ServiceType.MAINTENANCE.name),
         title = savedState["title"] ?: "",
         dateMillis = savedState["date"],
@@ -42,32 +43,58 @@ class VehicleServiceViewModel(
     init { load() }
 
     fun load() {
-        if (_state.value.form.saving) return
+        if (_state.value.form.saving || _state.value.deleting) return
         _state.value = _state.value.copy(loading = true, loadError = false)
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
             try {
                 val entries = repository.getEntries(car.id)
-                _state.value = _state.value.copy(entries = entries.sortedByDescending { it.dateMillis }, loading = false)
+                _state.value = _state.value.copy(entries = sortEntries(entries), loading = false)
             } catch (cancelled: CancellationException) { throw cancelled }
             catch (_: Exception) { _state.value = _state.value.copy(loading = false, loadError = true) }
         }
     }
 
-    fun openForm(currentMileage: Int = car.mileage) {
+    fun openForm(currentMileage: Int = car.mileage, initialType: ServiceType? = null) {
         if (_state.value.loading || _state.value.loadError || _state.value.form.saving) return
-        val previous = _state.value.form
-        savedState["entryId"] = savedState.get<String>("entryId") ?: UUID.randomUUID().toString()
+        val previous = if (_state.value.form.isEditing) ServiceFormState() else _state.value.form
+        savedState["entryId"] = if (_state.value.form.isEditing) {
+            UUID.randomUUID().toString()
+        } else {
+            savedState.get<String>("entryId") ?: UUID.randomUUID().toString()
+        }
         updateForm(previous.copy(visible = true,
+            type = initialType ?: previous.type,
             dateMillis = previous.dateMillis ?: today(),
             mileage = previous.mileage.ifBlank {
                 maxOf(currentMileage, _state.value.entries.maxOfOrNull { it.mileage } ?: 0).toString()
             }, saveError = null))
     }
 
-    /** Closing keeps an unfinished draft, so accidental navigation does not discard entered data. */
+    fun openEditForm(entry: ServiceEntry) {
+        if (_state.value.loading || _state.value.loadError || _state.value.form.saving || _state.value.deleting) return
+        savedState["entryId"] = entry.id
+        updateForm(ServiceFormState(
+            visible = true,
+            editingEntryId = entry.id,
+            type = entry.type,
+            title = entry.title,
+            dateMillis = entry.dateMillis,
+            mileage = entry.mileage.toString(),
+            cost = entry.costMinor?.let(::formatCostInput).orEmpty(),
+            note = entry.note
+        ))
+    }
+
+    /** Closing keeps an unfinished new-entry draft, while cancelling an edit resets the form cleanly. */
     fun closeForm() {
-        if (!_state.value.form.saving) updateForm(_state.value.form.copy(visible = false))
+        if (_state.value.form.saving) return
+        if (_state.value.form.isEditing) {
+            savedState.remove<String>("entryId")
+            updateForm(ServiceFormState())
+        } else {
+            updateForm(_state.value.form.copy(visible = false))
+        }
     }
 
     fun changeField(field: ServiceField, value: String) {
@@ -96,7 +123,9 @@ class VehicleServiceViewModel(
         updateForm(input.copy(submitted = true, saveError = null))
         val errors = validateService(input.title, input.dateMillis, input.mileage, input.cost, car.year, today())
         if (!errors.isValid) return
-        val id = savedState.get<String>("entryId") ?: UUID.randomUUID().toString().also { savedState["entryId"] = it }
+        val id = input.editingEntryId
+            ?: savedState.get<String>("entryId")
+            ?: UUID.randomUUID().toString().also { savedState["entryId"] = it }
         val entry = ServiceEntry(id = id, carId = car.id, type = input.type, title = input.title.trim(),
             dateMillis = input.dateMillis!!, mileage = input.mileage.toInt(),
             costMinor = parseCostMinor(input.cost), note = input.note.trim())
@@ -104,8 +133,7 @@ class VehicleServiceViewModel(
         viewModelScope.launch {
             try {
                 repository.addEntry(entry)
-                val entries = (_state.value.entries.filterNot { it.id == entry.id } + entry)
-                    .sortedWith(compareByDescending<ServiceEntry> { it.dateMillis }.thenByDescending { it.mileage })
+                val entries = sortEntries(_state.value.entries.filterNot { it.id == entry.id } + entry)
                 val suggestion = entry.mileage.takeIf { it > currentMileage }
                 savedState["suggestedMileage"] = suggestion
                 _state.value = _state.value.copy(entries = entries, suggestedMileage = suggestion)
@@ -119,14 +147,52 @@ class VehicleServiceViewModel(
         }
     }
 
+    fun requestDelete(entry: ServiceEntry) {
+        if (_state.value.deleting || _state.value.form.saving) return
+        _state.value = _state.value.copy(deletingEntry = entry, deleteError = null)
+    }
+
+    fun cancelDelete() {
+        if (!_state.value.deleting) {
+            _state.value = _state.value.copy(deletingEntry = null, deleteError = null)
+        }
+    }
+
+    fun confirmDelete() {
+        val entry = _state.value.deletingEntry ?: return
+        if (_state.value.deleting) return
+        _state.value = _state.value.copy(deleting = true, deleteError = null)
+        viewModelScope.launch {
+            try {
+                repository.deleteEntry(car.id, entry.id)
+                _state.value = _state.value.copy(
+                    entries = _state.value.entries.filterNot { it.id == entry.id },
+                    deletingEntry = null,
+                    deleting = false
+                )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                _state.value = _state.value.copy(
+                    deleting = false,
+                    deleteError = "Nie udało się usunąć wpisu. Spróbuj ponownie."
+                )
+            }
+        }
+    }
+
     fun dismissMileageSuggestion() {
         savedState.remove<Int>("suggestedMileage")
         _state.value = _state.value.copy(suggestedMileage = null)
     }
 
+    private fun sortEntries(entries: List<ServiceEntry>): List<ServiceEntry> =
+        entries.sortedWith(compareByDescending<ServiceEntry> { it.dateMillis }.thenByDescending { it.mileage })
+
     private fun updateForm(form: ServiceFormState) {
         _state.value = _state.value.copy(form = form)
         savedState["visible"] = form.visible
+        savedState["editingEntryId"] = form.editingEntryId
         savedState["type"] = form.type.name
         savedState["title"] = form.title
         savedState["date"] = form.dateMillis

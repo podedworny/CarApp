@@ -1,7 +1,9 @@
 package com.example.carapp.ui.addcar
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -10,10 +12,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.carapp.domain.model.FuelSource
+import com.example.carapp.domain.model.displayName
+import com.example.carapp.ui.components.BackFormButton
 
 @Composable
-fun AddCarScreen(state: AddCarState, modifier: Modifier = Modifier,
-    onBack: () -> Unit, onChange: (CarField, String) -> Unit, onSave: () -> Unit) {
+fun AddCarScreen(
+    state: AddCarState,
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit,
+    onChange: (CarField, String) -> Unit,
+    onToggleFuel: (FuelSource) -> Unit = {},
+    onSave: () -> Unit
+) {
     val brand = state.brand
     val model = state.model
     val year = state.year
@@ -25,17 +36,45 @@ fun AddCarScreen(state: AddCarState, modifier: Modifier = Modifier,
     val errors = state.errors
     val yearValid = !errors.year
     val mileageValid = !errors.mileage
-    LazyColumn(modifier.fillMaxSize().imePadding(), contentPadding = PaddingValues(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        item { TextButton(onClick = onBack, enabled = !saving) { Text(if (state.isEditing) "← Wróć do pojazdu" else "← Wróć do garażu") } }
+    LazyColumn(
+        modifier.fillMaxSize().imePadding(),
+        contentPadding = PaddingValues(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item { BackFormButton(if (state.isEditing) "Wróć do pojazdu" else "Wróć do garażu", onBack, enabled = !saving) }
         item {
-            Text(if (state.isEditing) "Edytuj dane" else "Dodaj samochód", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
+            Text(
+                if (state.isEditing) "Edytuj dane" else "Dodaj samochód",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(Modifier.height(8.dp))
             Text("Podaj podstawowe dane. Pola oznaczone * są wymagane.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         item { VehicleSelectionField(brand, "Marka *", VehicleSuggestions.brands, { onChange(CarField.BRAND, it) }, enabled = !saving, error = if (submitted && errors.brand) "Wybierz markę" else null, customLimit = 50) }
         item { VehicleSelectionField(model, "Model *", VehicleSuggestions.models(brand), { onChange(CarField.MODEL, it) }, enabled = !saving && brand.isNotBlank(), error = if (submitted && errors.model) "Wybierz model" else null) }
         item { YearSelectionField(year, state.maximumYear, enabled = !saving, error = submitted && !yearValid, onSelect = { onChange(CarField.YEAR, it) }) }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text("Rodzaj napędu / paliwa *", style = MaterialTheme.typography.labelLarge)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FuelSource.entries.forEach { source ->
+                        FilterChip(
+                            selected = source in state.fuelSources,
+                            enabled = !saving,
+                            onClick = { onToggleFuel(source) },
+                            label = { Text(source.displayName()) }
+                        )
+                    }
+                }
+                Text(
+                    text = if (submitted && state.fuelError) "Wybierz co najmniej jeden rodzaj paliwa lub napędu"
+                    else "Możesz zaznaczyć więcej niż jedno źródło (np. Benzyna + LPG lub Hybryda Plug-in).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (submitted && state.fuelError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
         if (!state.isEditing) {
             item { MileageInput(mileage, { onChange(CarField.MILEAGE, it) }, enabled = !saving, error = submitted && !mileageValid) }
         }
@@ -50,12 +89,29 @@ fun AddCarScreen(state: AddCarState, modifier: Modifier = Modifier,
 }
 
 @Composable
-private fun CarInputField(value: String, onChange: (String) -> Unit, label: String, placeholder: String,
-                     error: Boolean, message: String, saving: Boolean, numeric: Boolean = false) {
-    OutlinedTextField(value = value, onValueChange = onChange, modifier = Modifier.fillMaxWidth(),
-        label = { Text(label) }, placeholder = { Text(placeholder) }, singleLine = true,
-        enabled = !saving, isError = error,
+private fun CarInputField(
+    value: String,
+    onChange: (String) -> Unit,
+    label: String,
+    placeholder: String,
+    error: Boolean,
+    message: String,
+    saving: Boolean,
+    numeric: Boolean = false
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        modifier = Modifier.fillMaxWidth(),
+        label = { Text(label) },
+        placeholder = { Text(placeholder) },
+        singleLine = true,
+        enabled = !saving,
+        isError = error,
         supportingText = if (error) ({ Text(message) }) else null,
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words,
-            keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text))
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Words,
+            keyboardType = if (numeric) KeyboardType.Number else KeyboardType.Text
+        )
+    )
 }
